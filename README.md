@@ -9,7 +9,8 @@ This is an unofficial fan tool. It is not made by or connected to the ClanGen te
 - **Loads your save** from a zipped `saves` folder or the folder itself. Everything happens in your browser; nothing is uploaded.
 - **Lets you pick the Clan** to strike.
 - **Shields cats** so they can never be picked. Shields are remembered per Clan in your browser.
-- **Disasters:** flood, wildfire, sickness, famine, storm, blizzard, rockslide, Twolegs, badgers and rogue invasion, plus your own (use `{name}` where the cat's name goes).
+- **Disasters:** flood, wildfire, sickness, famine, storm, blizzard, rockslide, Twolegs, badgers and rogue invasion, plus your own. Each disaster has several death lines, and every struck cat gets one at random. Add your own disasters with one death line per line of text (use `{name}` where the cat's name goes).
+- **Individual deaths:** after a roll, press **Edit** on any struck cat to write exactly how they died, or **Another line** to pick a different one.
 - **How many:** an exact number, a percent of the Clan, or a random range.
 - **Leader lives:** a random number, one, all, or a number you choose. A leader with lives left survives.
 - **Reroll** freely, or **Spare** single cats from a roll. Nothing is saved until you download.

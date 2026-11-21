@@ -88,7 +88,7 @@ input[type=number]{width:84px}
 .result h2{color:var(--death)}
 .result .row{margin-top:12px}
 .tally{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;font-variant-numeric:tabular-nums;font-size:14px}
-.cats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.cats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;align-items:start}
 .cat{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel);min-width:0}
 .cat .who{flex:1;min-width:0}
 .cat .name{font-weight:700;overflow-wrap:anywhere}
@@ -101,7 +101,14 @@ input[type=number]{width:84px}
 .shield[aria-pressed=true]{background:var(--guard);border-color:var(--guard);color:var(--panel)}
 .fate{font-size:13px;font-weight:700;margin-top:2px}
 .fate.star{color:var(--star)} .fate.dark{color:var(--dark)} .fate.life{color:var(--death)}
-.spare{font-size:13px;padding:4px 8px;flex:none}
+.spare{font-size:13px;padding:4px 8px;flex:none;align-self:flex-start}
+.cat .line{margin:4px 0 0;font-size:13px;font-style:italic;overflow-wrap:anywhere}
+.cat .tools{gap:12px;margin-top:2px}
+.link{border:0;background:none;padding:2px 0;font-size:13px;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.editor{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.editor textarea{font-size:13px;min-height:70px}
+.small{font-size:13px;padding:5px 10px}
+.cat.dies .shield,.cat.hurt .shield{align-self:flex-start}
 .group-title{margin:16px 0 8px}
 .empty{color:var(--muted);text-align:center;padding:36px 12px;border:1px dashed var(--line);border-radius:var(--radius)}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px}
@@ -147,7 +154,7 @@ code{font-size:13px;background:var(--bg);border:1px solid var(--line);border-rad
           <div class="add">
             <input id="newName" type="text" placeholder="Name, e.g. Poisoned river" maxlength="40">
             <input id="newHeadline" type="text" placeholder="What happened, e.g. The river turned foul." maxlength="160">
-            <textarea id="newText" placeholder="How each cat died. Write {name} where the cat's name goes, e.g. {name} drank from the poisoned river and never woke." maxlength="300"></textarea>
+            <textarea id="newText" rows="4" placeholder="Ways a cat could die, one per line. Write {name} where the cat's name goes, e.g.&#10;{name} drank from the poisoned river and never woke.&#10;{name} grew sick after eating a poisoned fish." maxlength="1500"></textarea>
             <button id="addEvent" type="button">Add disaster</button>
             <p class="hint" id="addMsg">Your own disasters are remembered in this browser.</p>
           </div>
@@ -210,17 +217,61 @@ var AFTERLIFE_KEY={"2":"starclan","4":"dark_forest"};
 var RANK_ORDER=["leader","deputy","medicine cat","medicine cat apprentice","mediator","mediator apprentice","warrior","apprentice","elder","kitten","newborn"];
 var RANK_LABEL={"leader":"Leader","deputy":"Deputy","medicine cat":"Medicine cat","medicine cat apprentice":"Medicine cat apprentice","mediator":"Mediator","mediator apprentice":"Mediator apprentice","warrior":"Warrior","apprentice":"Apprentice","elder":"Elder","kitten":"Kit","newborn":"Newborn"};
 
+/* Death lines use ClanGen's own placeholders: m_c is the cat's name, {PRONOUN/m_c/poss} etc. their pronouns. */
 var PRESETS=[
-  {id:"flood",name:"Flood",headline:"A great flood swept through the territory.",text:"m_c drowned when floodwaters swept through the territory."},
-  {id:"fire",name:"Wildfire",headline:"A wildfire tore through the forest.",text:"m_c died in the wildfire that tore through the territory."},
-  {id:"sickness",name:"Sickness",headline:"A deadly sickness spread through the camp.",text:"m_c died of the sickness that swept through the Clan."},
-  {id:"famine",name:"Famine",headline:"The prey vanished and the Clan starved.",text:"m_c starved to death during the great famine."},
-  {id:"storm",name:"Storm",headline:"A violent storm battered the territory.",text:"m_c was crushed by a falling tree during a violent storm."},
-  {id:"blizzard",name:"Blizzard",headline:"An endless blizzard buried the camp.",text:"m_c froze to death in the endless blizzard."},
-  {id:"rockslide",name:"Rockslide",headline:"The ground shook and rocks crashed into camp.",text:"m_c was crushed when the camp walls collapsed."},
-  {id:"twolegs",name:"Twolegs",headline:"Twolegs came with their monsters and tore up the forest.",text:"m_c was killed when Twoleg monsters destroyed the forest."},
-  {id:"badgers",name:"Badgers",headline:"A pack of badgers attacked the camp.",text:"m_c was killed when badgers attacked the camp."},
-  {id:"rogues",name:"Rogue invasion",headline:"A huge band of rogues invaded the camp.",text:"m_c was killed fighting off the rogue invasion."}
+  {id:"flood",name:"Flood",headline:"A great flood swept through the territory.",texts:[
+    "m_c drowned when floodwaters swept through the territory.",
+    "m_c was swept away by the rising river and never seen again.",
+    "m_c was trapped in a flooded den and drowned.",
+    "m_c was crushed by debris carried on the floodwaters.",
+    "m_c drowned trying to carry a Clanmate to higher ground."]},
+  {id:"fire",name:"Wildfire",headline:"A wildfire tore through the forest.",texts:[
+    "m_c died in the wildfire that tore through the territory.",
+    "m_c choked on smoke while fleeing the burning forest.",
+    "m_c was trapped by the flames and could not escape.",
+    "m_c ran back into the burning camp to save others and never came out.",
+    "m_c died of burns from the great fire."]},
+  {id:"sickness",name:"Sickness",headline:"A deadly sickness spread through the camp.",texts:[
+    "m_c died of the sickness that swept through the Clan.",
+    "m_c grew weaker each day until the sickness took {PRONOUN/m_c/object}.",
+    "m_c died of the coughing sickness despite the medicine cats' best efforts.",
+    "m_c caught the sickness while caring for sick Clanmates and died.",
+    "m_c died of a fever that would not break."]},
+  {id:"famine",name:"Famine",headline:"The prey vanished and the Clan starved.",texts:[
+    "m_c starved to death during the great famine.",
+    "m_c gave {PRONOUN/m_c/poss} share of prey to others and slowly starved.",
+    "m_c grew too weak from hunger to survive.",
+    "m_c ate rotten prey out of desperation and died."]},
+  {id:"storm",name:"Storm",headline:"A violent storm battered the territory.",texts:[
+    "m_c was crushed by a falling tree during a violent storm.",
+    "m_c was struck by lightning during the storm.",
+    "m_c was blown off a ledge by the howling wind.",
+    "m_c was buried when the storm collapsed {PRONOUN/m_c/poss} den."]},
+  {id:"blizzard",name:"Blizzard",headline:"An endless blizzard buried the camp.",texts:[
+    "m_c froze to death in the endless blizzard.",
+    "m_c got lost in the snow and was never found.",
+    "m_c fell through the ice of a frozen stream and drowned.",
+    "m_c died of cold in {PRONOUN/m_c/poss} nest during the long freeze."]},
+  {id:"rockslide",name:"Rockslide",headline:"The ground shook and rocks crashed into camp.",texts:[
+    "m_c was crushed when the camp walls collapsed.",
+    "m_c was buried under falling rocks.",
+    "m_c fell into a crack that opened in the ground.",
+    "m_c was struck by a tumbling boulder."]},
+  {id:"twolegs",name:"Twolegs",headline:"Twolegs came with their monsters and tore up the forest.",texts:[
+    "m_c was killed when Twoleg monsters destroyed the forest.",
+    "m_c was hit by a monster while fleeing the Twolegs.",
+    "m_c was caught in a Twoleg trap.",
+    "m_c was crushed when the Twolegs tore down the trees."]},
+  {id:"badgers",name:"Badgers",headline:"A pack of badgers attacked the camp.",texts:[
+    "m_c was killed when badgers attacked the camp.",
+    "m_c died defending the nursery from a badger.",
+    "m_c was mauled by a badger.",
+    "m_c died of wounds from the badger attack."]},
+  {id:"rogues",name:"Rogue invasion",headline:"A huge band of rogues invaded the camp.",texts:[
+    "m_c was killed fighting off the rogue invasion.",
+    "m_c was ambushed by rogues and killed.",
+    "m_c died protecting {PRONOUN/m_c/poss} Clanmates from the rogues.",
+    "m_c died of wounds from the battle with the rogues."]}
 ];
 
 /* ---------- example Clan so the page shows something before a save is loaded ---------- */
@@ -235,7 +286,8 @@ var S={files:null,clans:[],sel:null,data:EXAMPLE,protect:{},eventId:"flood",cust
 /* ---------- storage helpers (per-viewer conveniences only) ---------- */
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-S.custom=lsGet("cc_custom",[]);
+S.custom=lsGet("cc_custom",[]).map(function(e){if(!e.texts)e.texts=[e.text];return e;});
+S.editing=null;
 
 /* ---------- cat helpers ---------- */
 function cur(c){var h=c.status.group_history;return h[h.length-1];}
@@ -250,6 +302,15 @@ function displayName(c){
   return p+s;
 }
 function isKit(c){return c.moons<6;}
+var THEY={subject:"they",object:"them",poss:"their",inposs:"theirs",self:"themself"};
+function pronounsOf(c){var p=c&&c.pronouns&&c.pronouns.en&&c.pronouns.en[0];return p||THEY;}
+function renderLine(text,c){ // show a death line the way ClanGen will
+  var pr=pronounsOf(c);
+  return text.replace(/\{PRONOUN\/m_c\/(\w+)(\/CAP)?\}/g,function(m,k,cap){var w=pr[k]||THEY[k]||k;return cap?w.charAt(0).toUpperCase()+w.slice(1):w;}).replace(/m_c/g,c?displayName(c):"Fernpelt");
+}
+function pickText(ev){return ev.texts[Math.floor(Math.random()*ev.texts.length)];}
+function toEditable(text){return text.replace(/m_c/g,"{name}");}
+function fromEditable(text){return text.replace(/\{name\}/gi,"m_c");}
 function allEvents(){return PRESETS.concat(S.custom);}
 function curEvent(){var e=allEvents().filter(function(x){return x.id===S.eventId;})[0];return e||PRESETS[0];}
 function el(tag,attrs,kids){var n=document.createElement(tag);if(attrs)for(var k in attrs){if(k==="text")n.textContent=attrs[k];else if(k==="html")n.innerHTML=attrs[k];else if(k.slice(0,2)==="on")n.addEventListener(k.slice(2),attrs[k]);else n.setAttribute(k,attrs[k]);}(kids||[]).forEach(function(c){if(c)n.appendChild(typeof c==="string"?document.createTextNode(c):c);});return n;}
@@ -313,12 +374,12 @@ function renderClans(){
 function renderEvents(){
   var box=$("eventList");box.innerHTML="";
   allEvents().forEach(function(e){
-    var b=el("button",{type:"button",class:"chip","aria-pressed":String(e.id===S.eventId),onclick:function(){S.eventId=e.id;if(S.roll)S.roll.event=curEvent();renderEvents();renderResult();}},[e.name]);
+    var b=el("button",{type:"button",class:"chip","aria-pressed":String(e.id===S.eventId),onclick:function(){S.eventId=e.id;if(S.roll)S.roll.hits.forEach(function(h){if(!h.edited)h.text=pickText(e);});renderAll();}},[e.name]);
     if(e.custom){b.appendChild(el("span",{class:"x","aria-label":"Remove "+e.name,role:"button",tabindex:"0",text:"×",onclick:function(ev){ev.stopPropagation();S.custom=S.custom.filter(function(x){return x.id!==e.id;});lsSet("cc_custom",S.custom);if(S.eventId===e.id)S.eventId="flood";renderEvents();}}));}
     box.appendChild(b);
   });
   var ev=curEvent();
-  $("eventPreview").textContent=ev.headline+" Each cat's history will read: “"+ev.text.replace(/m_c/g,"Fernpelt")+"”";
+  $("eventPreview").textContent=ev.headline+" Each cat gets one of "+ev.texts.length+" death "+(ev.texts.length===1?"line":"lines")+", such as “"+renderLine(ev.texts[0],null)+"”";
 }
 function countRange(){
   var n=living().length;
@@ -364,6 +425,20 @@ function renderRoster(){
       if(!f.dies){t="Loses "+f.livesLost+" "+(f.livesLost===1?"life":"lives")+", "+f.livesLeft+" left";k="life";}
       else{t=(f.lives? "Loses all lives · ":"")+"Dies → "+(f.afterlife===DARK?"Dark Forest":"StarClan")+(f.accept==="rejected"?" (StarClan turned them away)":f.accept==="contentious"?" (some spirits disapprove)":"");if(f.accept==="rejected"&&f.guide===DARK)t=t.replace("StarClan turned them away","the Dark Forest turned them away");k=f.afterlife===DARK?"dark":"star";}
       who.appendChild(el("div",{class:"fate "+k,text:t}));
+      if(S.editing===c.ID){
+        var ta=el("textarea",{id:"edit-"+c.ID,"aria-label":"How "+displayName(c)+" died",maxlength:"300"});ta.value=toEditable(f.text);
+        var save=function(){var v=ta.value.trim();if(v){if(!/\{name\}|m_c/i.test(v)&&v.indexOf(displayName(c))<0)v="{name} "+v.charAt(0).toLowerCase()+v.slice(1);f.text=fromEditable(v);f.edited=true;}S.editing=null;renderRoster();};
+        ta.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();save();}if(e.key==="Escape"){S.editing=null;renderRoster();}});
+        who.appendChild(el("div",{class:"editor"},[ta,el("p",{class:"hint",text:"Write {name} where "+displayName(c)+"'s name goes."}),el("div",{class:"row"},[
+          el("button",{type:"button",class:"primary small",onclick:save},["Save"]),
+          el("button",{type:"button",class:"small",onclick:function(){S.editing=null;renderRoster();}},["Cancel"])])]));
+        setTimeout(function(){ta.focus();},0);
+      }else{
+        who.appendChild(el("p",{class:"line",text:renderLine(f.text,c)}));
+        who.appendChild(el("div",{class:"row tools"},[
+          el("button",{type:"button",class:"link",onclick:function(){S.editing=c.ID;renderRoster();}},["Edit"]),
+          curEvent().texts.length>1?el("button",{type:"button",class:"link",onclick:function(){var ev=curEvent(),n=f.text,tries=0;while(n===f.text&&tries++<10)n=pickText(ev);f.text=n;f.edited=false;renderRoster();}},["Another line"]):null]));
+      }
     }
     var sh=el("button",{type:"button",class:"shield","aria-pressed":String(p),"aria-label":(p?"Remove shield from ":"Shield ")+displayName(c),title:p?"Shielded: can't be struck":"Shield this cat",html:SHIELD,onclick:function(){if(S.protect[c.ID])delete S.protect[c.ID];else S.protect[c.ID]=true;if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll&&S.protect[c.ID])spare(c.ID);renderAll();}});
     var li=el("li",{class:cls},[sh,who]);
@@ -416,8 +491,9 @@ function afterlifeFor(c){ // mirrors Cat.dead setter in ClanGen
 function roll(){
   var r=countRange(),k=randInt(r[0],r[1]),pool=shuffle(eligible());k=Math.min(k,pool.length);
   var lives=+S.data.clan.leader_lives||0,leaderId=String(S.data.clan.leader);
+  var ev=curEvent();S.editing=null;
   var hits=pool.slice(0,k).map(function(c){
-    var h={id:c.ID,dies:true};
+    var h={id:c.ID,dies:true,text:pickText(ev)};
     if(c.ID===leaderId&&rankOf(c)==="leader"&&lives>0){
       var m=$("leadMode").value,lost;
       if(m==="one")lost=1;else if(m==="all")lost=lives;else if(m==="set")lost=Math.max(1,+$("leadSet").value||1);else lost=randInt(1,lives);
@@ -450,7 +526,7 @@ function download(){
   var deadIds=[],historyAdds={};
   S.roll.hits.forEach(function(h){
     var c=byId[h.id];if(!c)return;
-    historyAdds[h.id]={died:{involved:null,text:ev.text,moon:moon},accept:h.dies?h.acceptStr:null};
+    historyAdds[h.id]={died:{involved:null,text:h.text||pickText(ev),moon:moon},accept:h.dies?h.acceptStr:null};
     if(h.lives)clan.leader_lives=h.livesLeft;
     if(!h.dies)return;
     deadIds.push(h.id);
@@ -529,11 +605,11 @@ $("protKits").addEventListener("click",function(){living().forEach(function(c){i
 $("protNone").addEventListener("click",function(){S.protect={};if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);renderAll();});
 $("addEvent").addEventListener("click",function(){
   var n=$("newName").value.trim(),h=$("newHeadline").value.trim(),t=$("newText").value.trim(),msg=$("addMsg");
-  if(!n||!t){msg.textContent="Give the disaster a name and say how each cat died.";return;}
-  if(t.indexOf("{name}")<0)t="{name} "+t.charAt(0).toLowerCase()+t.slice(1);
-  var e={id:"c"+Date.now(),name:n,headline:h||(n+" struck the Clan."),text:t.replace(/\{name\}/g,"m_c"),custom:true};
+  var lines=t.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean).map(function(x){if(!/\{name\}/i.test(x))x="{name} "+x.charAt(0).toLowerCase()+x.slice(1);return fromEditable(x);});
+  if(!n||!lines.length){msg.textContent="Give the disaster a name and at least one way a cat died.";return;}
+  var e={id:"c"+Date.now(),name:n,headline:h||(n+" struck the Clan."),texts:lines,custom:true};
   S.custom.push(e);lsSet("cc_custom",S.custom);S.eventId=e.id;
-  $("newName").value=$("newHeadline").value=$("newText").value="";msg.textContent="Added "+n+".";renderEvents();
+  $("newName").value=$("newHeadline").value=$("newText").value="";msg.textContent="Added "+n+" with "+lines.length+" death "+(lines.length===1?"line":"lines")+".";renderAll();
 });
 
 /* start: example Clan with a sample roll, so the page shows what it does */
