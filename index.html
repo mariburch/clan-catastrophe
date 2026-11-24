@@ -113,6 +113,9 @@ input[type=number]{width:84px}
 .small{font-size:13px;padding:5px 10px}
 .cat.dies .shield,.cat.hurt .shield,.cat.wounded .shield{align-self:flex-start}
 .cat.wounded{border-color:var(--hurt);background:var(--hurt-soft)}
+.cat.taken{border-color:var(--muted);border-style:dashed;background:var(--bg)}
+.fate.gone{color:var(--muted)}
+.takebox{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
 .fate.wound{color:var(--hurt)}
 .conds{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .cond{display:inline-flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--line);background:var(--panel);padding:2px 4px 2px 9px;font-size:13px}
@@ -166,12 +169,18 @@ code{font-size:13px;background:var(--bg);border:1px solid var(--line);border-rad
         <h2 id="h-event">2. The disaster</h2>
         <div class="events" id="eventList"></div>
         <p class="quote" id="eventPreview"></p>
+        <div class="takebox" id="takeBox" hidden>
+          <label class="check" for="takeOn"><input id="takeOn" type="checkbox" checked> <span id="takeLabel">Twolegs take some cats away</span></label>
+          <div class="row" id="takeRow"><span>Take</span> <input id="tMin" type="number" min="0" value="1" aria-label="At least"> <span>to</span> <input id="tMax" type="number" min="0" value="3" aria-label="At most"> <span>cats</span></div>
+          <p class="hint">Taken cats become kittypets and the Clan counts them as lost, just like cats the game itself loses. They might find their way home in a later moon.</p>
+        </div>
         <details>
           <summary>Add your own disaster</summary>
           <div class="add">
             <input id="newName" type="text" placeholder="Name, e.g. Poisoned river" maxlength="40">
             <input id="newHeadline" type="text" placeholder="What happened, e.g. The river turned foul." maxlength="160">
             <textarea id="newText" rows="4" placeholder="Ways a cat could die, one per line. Write {name} where the cat's name goes, e.g.&#10;{name} drank from the poisoned river and never woke.&#10;{name} grew sick after eating a poisoned fish." maxlength="1500"></textarea>
+            <label class="check" for="newTake"><input id="newTake" type="checkbox"> <span>Cats can also be taken away (they become lost kittypets)</span></label>
             <button id="addEvent" type="button">Add disaster</button>
             <p class="hint" id="addMsg">Your own disasters are remembered in this browser.</p>
           </div>
@@ -294,7 +303,7 @@ var PRESETS=[
     "m_c was buried under falling rocks.",
     "m_c fell into a crack that opened in the ground.",
     "m_c was struck by a tumbling boulder."]},
-  {id:"twolegs",name:"Twolegs",headline:"Twolegs came with their monsters and tore up the forest.",texts:[
+  {id:"twolegs",name:"Twolegs",canTake:true,headline:"Twolegs came with their monsters and tore up the forest.",texts:[
     "m_c was killed when Twoleg monsters destroyed the forest.",
     "m_c was hit by a monster while fleeing the Twolegs.",
     "m_c was caught in a Twoleg trap.",
@@ -429,11 +438,14 @@ function renderClans(){
 function renderEvents(){
   var box=$("eventList");box.innerHTML="";
   allEvents().forEach(function(e){
-    var b=el("button",{type:"button",class:"chip","aria-pressed":String(e.id===S.eventId),onclick:function(){S.eventId=e.id;if(S.roll)S.roll.hits.forEach(function(h){if(!h.edited)h.text=pickText(e);});renderAll();}},[e.name]);
+    var b=el("button",{type:"button",class:"chip","aria-pressed":String(e.id===S.eventId),onclick:function(){S.eventId=e.id;if(S.roll){S.roll.hits.forEach(function(h){if(!h.edited)h.text=pickText(e);});if(!e.canTake)S.roll.taken=[];}renderAll();}},[e.name]);
     if(e.custom){b.appendChild(el("span",{class:"x","aria-label":"Remove "+e.name,role:"button",tabindex:"0",text:"×",onclick:function(ev){ev.stopPropagation();S.custom=S.custom.filter(function(x){return x.id!==e.id;});lsSet("cc_custom",S.custom);if(S.eventId===e.id)S.eventId="flood";renderEvents();}}));}
     box.appendChild(b);
   });
   var ev=curEvent();
+  $("takeBox").hidden=!ev.canTake;
+  $("takeLabel").textContent=(ev.id==="twolegs"?"Twolegs take":ev.name+" takes")+" some cats away";
+  $("takeRow").hidden=!$("takeOn").checked;
   $("eventPreview").textContent=ev.headline+" Each cat gets one of "+ev.texts.length+" death "+(ev.texts.length===1?"line":"lines")+", such as “"+renderLine(ev.texts[0],null)+"”";
 }
 function countRange(){
@@ -471,8 +483,8 @@ function renderRoster(){
   if(!cats.length){box.appendChild(el("div",{class:"empty",text:"This Clan has no living cats."}));return;}
   var ul=el("ul",{class:"cats"});
   cats.forEach(function(c){
-    var f=fateFor(c.ID),p=!!S.protect[c.ID],w=hurtFor(c.ID);
-    var cls="cat"+(p?" prot":"")+(f?(f.dies?" dies":" hurt"):"")+(w?" wounded":"");
+    var f=fateFor(c.ID),p=!!S.protect[c.ID],w=hurtFor(c.ID),tk=takenFor(c.ID);
+    var cls="cat"+(p?" prot":"")+(f?(f.dies?" dies":" hurt"):"")+(w?" wounded":"")+(tk?" taken":"");
     var meta=RANK_LABEL[rankOf(c)]||rankOf(c);meta+=" · "+c.moons+" moons";
     var who=el("div",{class:"who"},[el("div",{class:"name",text:displayName(c)}),el("div",{class:"meta",text:meta})]);
     if(f){
@@ -495,7 +507,9 @@ function renderRoster(){
           curEvent().texts.length>1?el("button",{type:"button",class:"link",onclick:function(){var ev=curEvent(),n=f.text,tries=0;while(n===f.text&&tries++<10)n=pickText(ev);f.text=n;f.edited=false;renderRoster();}},["Another line"]):null]));
       }
     }
-    if(w){
+    if(tk){
+      who.appendChild(el("div",{class:"fate gone",text:"Taken by "+(curEvent().id==="twolegs"?"Twolegs":curEvent().name)+" · becomes a lost kittypet"}));
+    }else if(w){
       who.appendChild(el("div",{class:"fate wound",text:"Survives, but hurt"}));
       var cl=el("div",{class:"conds"});
       w.conds.forEach(function(x){cl.appendChild(el("span",{class:"cond"},[el("span",{class:"k",text:KIND_ONE[x.kind]}),cap(x.name),el("button",{type:"button","aria-label":"Remove "+x.name+" from "+displayName(c),title:"Remove",onclick:function(){w.conds=w.conds.filter(function(y){return y!==x;});if(!w.conds.length)S.roll.hurt=S.roll.hurt.filter(function(h){return h!==w;});renderAll();}},["×"])]));});
@@ -506,7 +520,7 @@ function renderRoster(){
       add.addEventListener("change",function(){if(!add.value)return;var v=add.value.split("|");w.conds.push({kind:v[0],name:v[1]});renderRoster();});
       who.appendChild(add);
       who.appendChild(el("div",{class:"row tools"},[el("button",{type:"button",class:"link",onclick:function(){var n=pickConds(c);if(n.length)w.conds=n;renderRoster();}},["Other conditions"])]));
-    }else if(S.roll&&!f&&!p){
+    }else if(S.roll&&!f&&!p&&!tk){
       var add2=el("select",{class:"addcond quiet","aria-label":"Hurt "+displayName(c)});
       add2.appendChild(el("option",{value:"",text:"Hurt this cat…"}));
       KINDS.forEach(function(k){var og=el("optgroup",{label:KIND_LABEL[k]});Object.keys(CONDS[k]).sort().forEach(function(n){if(allowedCond(c,n,[]))og.appendChild(el("option",{value:k+"|"+n,text:cap(n)}));});add2.appendChild(og);});
@@ -515,7 +529,7 @@ function renderRoster(){
     }
     var sh=el("button",{type:"button",class:"shield","aria-pressed":String(p),"aria-label":(p?"Remove shield from ":"Shield ")+displayName(c),title:p?"Shielded: can't be struck":"Shield this cat",html:SHIELD,onclick:function(){if(S.protect[c.ID])delete S.protect[c.ID];else S.protect[c.ID]=true;if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll&&S.protect[c.ID])spare(c.ID);renderAll();}});
     var li=el("li",{class:cls},[sh,who]);
-    if(f||w)li.appendChild(el("button",{type:"button",class:"spare",onclick:function(){spare(c.ID);renderAll();}},["Spare"]));
+    if(f||w||tk)li.appendChild(el("button",{type:"button",class:"spare",onclick:function(){spare(c.ID);renderAll();}},["Spare"]));
     ul.appendChild(li);
   });
   box.appendChild(ul);
@@ -534,10 +548,13 @@ function renderResult(){
   if(hurt.length)t.appendChild(el("span",{text:"Leader survives, losing "+hurt[0].livesLost+" "+(hurt[0].livesLost===1?"life":"lives")}));
   var wn=(r.hurt||[]).length;
   if(wn)t.appendChild(el("span",{text:"Hurt survivors: "+wn}));
+  var tn=(r.taken||[]).length;
+  if(tn)t.appendChild(el("span",{text:"Taken: "+tn}));
   card.appendChild(t);
   var warn=[];var ids=dead.map(function(h){return h.id;});
   var dep=S.data.clan.deputy;
-  if(ids.indexOf(String(S.data.clan.leader))>=0&&dep&&ids.indexOf(String(dep))>=0)warn.push("The leader and deputy both die. Next moon the game will warn there is no leader; choose a new one from a cat's profile.");
+  var gone=ids.concat((r.taken||[]).map(function(h){return h.id;}));
+  if(gone.indexOf(String(S.data.clan.leader))>=0&&dep&&gone.indexOf(String(dep))>=0)warn.push("The leader and deputy are both gone. Next moon the game will warn there is no leader; choose a new one from a cat's profile.");
   if(warn.length)card.appendChild(el("p",{class:"banner",text:warn.join(" ")}));
   var row=el("div",{class:"row"});
   row.appendChild(el("button",{type:"button",class:"primary",onclick:roll},["Roll again"]));
@@ -605,10 +622,21 @@ function pickConds(c){
 function rollHurt(){
   if(!S.roll)return;
   if(!$("hurtOn").checked){S.roll.hurt=[];return;}
-  var struck=S.roll.hits.map(function(h){return h.id;});
+  var struck=S.roll.hits.map(function(h){return h.id;}).concat((S.roll.taken||[]).map(function(h){return h.id;}));
   var pool=shuffle(living().filter(function(c){return !S.protect[c.ID]&&struck.indexOf(c.ID)<0;}));
   var r=hurtRange(pool.length+struck.length),k=Math.min(randInt(r[0],r[1]),pool.length);
   S.roll.hurt=pool.slice(0,k).map(function(c){return {id:c.ID,conds:pickConds(c)};}).filter(function(h){return h.conds.length;});
+}
+function takenFor(id){if(!S.roll||!S.roll.taken)return null;return S.roll.taken.filter(function(h){return h.id===id;})[0]||null;}
+function takeOn(){return !!curEvent().canTake&&$("takeOn").checked;}
+function rollTaken(){
+  if(!S.roll)return;S.roll.taken=[];
+  if(!takeOn())return;
+  var struck=S.roll.hits.map(function(h){return h.id;});
+  var pool=shuffle(living().filter(function(c){return !S.protect[c.ID]&&struck.indexOf(c.ID)<0;}));
+  var a=Math.max(0,+$("tMin").value||0),b=Math.max(0,+$("tMax").value||0);
+  var k=Math.min(randInt(Math.min(a,b),Math.max(a,b)),pool.length);
+  S.roll.taken=pool.slice(0,k).map(function(c){return {id:c.ID};});
 }
 function hurtFor(id){if(!S.roll||!S.roll.hurt)return null;return S.roll.hurt.filter(function(h){return h.id===id;})[0]||null;}
 function renderAll(){renderClans();renderEvents();renderCount();renderLeader();renderPool();renderHurt();renderSummary();renderResult();renderRoster();}
@@ -641,12 +669,13 @@ function roll(){
     var a=afterlifeFor(c);h.afterlife=a.afterlife;h.accept=a.accept;h.guide=a.guide;h.acceptStr=a.acceptStr;
     return h;
   });
-  S.roll={hits:hits,hurt:[]};
+  S.roll={hits:hits,hurt:[],taken:[]};
+  rollTaken();
   rollHurt();
   renderAll();
   var rb=$("resultBox");if(rb.scrollIntoView&&window.innerWidth<880)rb.scrollIntoView({behavior:"smooth",block:"start"});
 }
-function spare(id){if(S.roll){S.roll.hits=S.roll.hits.filter(function(h){return h.id!==id;});S.roll.hurt=(S.roll.hurt||[]).filter(function(h){return h.id!==id;});}}
+function spare(id){if(S.roll){S.roll.hits=S.roll.hits.filter(function(h){return h.id!==id;});S.roll.hurt=(S.roll.hurt||[]).filter(function(h){return h.id!==id;});S.roll.taken=(S.roll.taken||[]).filter(function(h){return h.id!==id;});}}
 
 /* ---------- applying the roll to the save (mirrors ClanGen's death handling) ---------- */
 function addUnique(arr,v){if(arr.indexOf(v)<0)arr.push(v);}
@@ -682,6 +711,18 @@ function download(){
     c.current_apprentice=[];
     addUnique(clan.just_died=clan.just_died||[],c.ID);
   });
+  // taken cats: mirrors ClanGen's become_lost(): standing with the Clan becomes "lost", they turn kittypet
+  var takenIds=[];
+  (S.roll.taken||[]).forEach(function(tk){
+    var c=byId[tk.id];if(!c)return;takenIds.push(c.ID);
+    var st=c.status.standing_history,rec=st.filter(function(x){return x.group===PLAYER;})[0];
+    if(rec)rec.standing.push("lost");else st.push({group:PLAYER,standing:["lost"],near:true});
+    c.status.group_history.push({group:null,rank:"kittypet",moons_as:0});
+    if(c.mentor&&byId[c.mentor]){var m=byId[c.mentor];removeFrom(m.current_apprentice,c.ID);addUnique(m.former_apprentices,c.ID);addUnique(c.former_mentor,c.mentor);}
+    c.mentor=null;
+    (c.current_apprentice||[]).slice().forEach(function(aid){var a=byId[aid];if(a){a.mentor=null;addUnique(a.former_mentor,c.ID);}addUnique(c.former_apprentices,aid);});
+    c.current_apprentice=[];
+  });
   // survivors' conditions, written the way ClanGen's get_injured / get_ill / get_permanent_condition do
   var lethal=$("lethal").checked,condAdds={};
   (S.roll.hurt||[]).forEach(function(w){
@@ -708,11 +749,11 @@ function download(){
     if((m=/^history\/(.+)_history\.json$/.exec(rel))&&historyAdds[m[1]])return null;
     if((m=/^conditions\/(.+)_conditions\.json$/.exec(rel))&&condAdds[m[1]])return null;
     if(rel==="pregnancy.json")return files[p].text().then(function(t){var j=JSON.parse(t||"{}");deadIds.forEach(function(id){delete j[id];});out.file(folder+rel,JSON.stringify(j,null,4));});
-    if(rel==="events.json")return files[p].text().then(function(t){var j=[];try{j=JSON.parse(t);}catch(e){}j.unshift(summaryEvent(ev,deadIds,byId));var he=healthEvent(ev);if(he)j.splice(1,0,he);out.file(folder+rel,JSON.stringify(j,null,4));});
+    if(rel==="events.json")return files[p].text().then(function(t){var j=[];try{j=JSON.parse(t);}catch(e){}j.unshift(summaryEvent(ev,deadIds,byId));var he=healthEvent(ev);if(he)j.splice(1,0,he);var te=takenEvent(ev,takenIds);if(te)j.splice(1,0,te);out.file(folder+rel,JSON.stringify(j,null,4));});
     if((m=/^conditions\/(.+)_conditions\.json$/.exec(rel))&&deadIds.indexOf(m[1])>=0)return files[p].text().then(function(t){var j=JSON.parse(t);delete j.injuries;delete j.illnesses;if(Object.keys(j).length)out.file(folder+rel,JSON.stringify(j,null,4));});
     return files[p].bytes().then(function(b){out.file(folder+rel,b);});
   }).filter(Boolean);
-  if(!files[dir+"events.json"])out.file(folder+"events.json",JSON.stringify([summaryEvent(ev,deadIds,byId)].concat(healthEvent(ev)||[]),null,4));
+  if(!files[dir+"events.json"])out.file(folder+"events.json",JSON.stringify([summaryEvent(ev,deadIds,byId)].concat(takenEvent(ev,takenIds)||[]).concat(healthEvent(ev)||[]),null,4));
   Object.keys(condAdds).forEach(function(id){out.file(folder+"conditions/"+id+"_conditions.json",JSON.stringify(condAdds[id],null,4));});
   Object.keys(historyAdds).forEach(function(id){
     var p=dir+"history/"+id+"_history.json",ha=historyAdds[id];
@@ -744,10 +785,18 @@ function download(){
     });
   }).catch(function(e){say("Something went wrong building the save: "+e.message+". Your original files are unchanged.",true);});
 }
+function takenEvent(ev,ids){
+  if(!ids.length)return null;
+  var names=ids.map(function(id){return displayName(catById(id));});
+  var list=names.length>1?names.slice(0,-1).join(", ")+" and "+names[names.length-1]:names[0];
+  var who=ev.id==="twolegs"?"Twolegs":"The "+ev.name.toLowerCase();
+  return {text:who+" took "+list+" away. The Clan does not know if "+(names.length===1?"they":"any of them")+" will ever come home.",types:["misc"],cats_involved:ids.slice(),cat_dict:{}};
+}
 function healthEvent(ev){
   var hs=(S.roll.hurt||[]).filter(function(w){return w.conds.length;});if(!hs.length)return null;
   var parts=hs.map(function(w){return displayName(catById(w.id))+" ("+w.conds.map(function(x){return x.name;}).join(", ")+")";});
-  return {text:"Survivors of the "+ev.name.toLowerCase()+" were left hurt: "+parts.join("; ")+".",types:["health"],cats_involved:hs.map(function(w){return w.id;}),cat_dict:{}};
+  var what={twolegs:"the Twoleg attack",badgers:"the badger attack",rogues:"the rogue invasion"}[ev.id]||("the "+ev.name.toLowerCase());
+  return {text:"Survivors of "+what+" were left hurt: "+parts.join("; ")+".",types:["health"],cats_involved:hs.map(function(w){return w.id;}),cat_dict:{}};
 }
 function summaryEvent(ev,deadIds,byId){
   var names=deadIds.map(function(id){return displayName(catById(id));});
@@ -770,15 +819,16 @@ Array.prototype.forEach.call(document.querySelectorAll("#hurtSeg button"),functi
   $("hModeExact").hidden=S.hurtMode!=="exact";$("hModePercent").hidden=S.hurtMode!=="percent";$("hModeRange").hidden=S.hurtMode!=="range";renderHurt();
 });});
 ["hExact","hPercent","hMin","hMax"].forEach(function(id){$(id).addEventListener("input",renderHurt);});
+$("takeOn").addEventListener("change",function(){if(S.roll){rollTaken();rollHurt();}renderAll();});
 $("hurtOn").addEventListener("change",function(){if(S.roll){rollHurt();}renderAll();});
 $("rollBtn").addEventListener("click",roll);
-$("protKits").addEventListener("click",function(){living().forEach(function(c){if(isKit(c))S.protect[c.ID]=true;});if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll){S.roll.hits=S.roll.hits.filter(function(h){return !S.protect[h.id];});S.roll.hurt=(S.roll.hurt||[]).filter(function(h){return !S.protect[h.id];});}renderAll();});
+$("protKits").addEventListener("click",function(){living().forEach(function(c){if(isKit(c))S.protect[c.ID]=true;});if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll){S.roll.hits=S.roll.hits.filter(function(h){return !S.protect[h.id];});S.roll.hurt=(S.roll.hurt||[]).filter(function(h){return !S.protect[h.id];});S.roll.taken=(S.roll.taken||[]).filter(function(h){return !S.protect[h.id];});}renderAll();});
 $("protNone").addEventListener("click",function(){S.protect={};if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);renderAll();});
 $("addEvent").addEventListener("click",function(){
   var n=$("newName").value.trim(),h=$("newHeadline").value.trim(),t=$("newText").value.trim(),msg=$("addMsg");
   var lines=t.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean).map(function(x){if(!/\{name\}/i.test(x))x="{name} "+x.charAt(0).toLowerCase()+x.slice(1);return fromEditable(x);});
   if(!n||!lines.length){msg.textContent="Give the disaster a name and at least one way a cat died.";return;}
-  var e={id:"c"+Date.now(),name:n,headline:h||(n+" struck the Clan."),texts:lines,custom:true};
+  var e={id:"c"+Date.now(),name:n,headline:h||(n+" struck the Clan."),texts:lines,custom:true,canTake:$("newTake").checked};$("newTake").checked=false;
   S.custom.push(e);lsSet("cc_custom",S.custom);S.eventId=e.id;
   $("newName").value=$("newHeadline").value=$("newText").value="";msg.textContent="Added "+n+" with "+lines.length+" death "+(lines.length===1?"line":"lines")+".";renderAll();
 });

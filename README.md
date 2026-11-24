@@ -13,6 +13,7 @@ This is an unofficial fan tool. It is not made by or connected to the ClanGen te
 - **Individual deaths:** after a roll, press **Edit** on any struck cat to write exactly how they died, or **Another line** to pick a different one.
 - **How many:** an exact number, a percent of the Clan, or a random range.
 - **Leader lives:** a random number, one, all, or a number you choose. A leader with lives left survives.
+- **Taken by Twolegs:** the Twolegs disaster can also carry cats away (choose how many). Taken cats become kittypets and the Clan counts them as lost, the same way ClanGen loses cats, so they might come home in a later moon. Your own disasters can take cats too.
 - **Survivors:** some cats can live through the disaster with injuries, illnesses or permanent conditions. Each disaster suggests fitting ones (a flood brings water in their lungs, greencough and raspy lungs; a rockslide brings broken bones and lost legs), and you can add or remove any of ClanGen's own conditions. After a roll you can add, remove or reroll any cat's conditions, or hurt a cat by hand.
 - **Reroll** freely, reroll only the survivors, or **Spare** single cats from a roll. Nothing is saved until you download.
 - **Downloads** a new copy of that Clan's folder to swap into your saves.
