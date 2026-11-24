@@ -17,6 +17,7 @@
   --star:#4f4aa8; --star-soft:#e2e0f6;
   --dark:#6d4430; --dark-soft:#efe0d6;
   --guard:#8a6a12; --guard-soft:#f5ebc9;
+  --hurt:#9a5a10; --hurt-soft:#f7e7cf;
   --display:"Young Serif", Georgia, "Times New Roman", serif;
   --body:"Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
   --radius:10px;
@@ -28,6 +29,7 @@
   --star:#aaa5f2; --star-soft:#26244a;
   --dark:#d39c7f; --dark-soft:#3a2a21;
   --guard:#e2c05c; --guard-soft:#3a3218;
+  --hurt:#e8a65a; --hurt-soft:#3b2b16;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111814; --panel:#18211c; --line:#2c3a31; --fg:#e3eae2; --muted:#9aaa9e;
@@ -36,6 +38,7 @@
   --star:#aaa5f2; --star-soft:#26244a;
   --dark:#d39c7f; --dark-soft:#3a2a21;
   --guard:#e2c05c; --guard-soft:#3a3218;
+  --hurt:#e8a65a; --hurt-soft:#3b2b16;
   color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
@@ -108,7 +111,21 @@ input[type=number]{width:84px}
 .editor{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .editor textarea{font-size:13px;min-height:70px}
 .small{font-size:13px;padding:5px 10px}
-.cat.dies .shield,.cat.hurt .shield{align-self:flex-start}
+.cat.dies .shield,.cat.hurt .shield,.cat.wounded .shield{align-self:flex-start}
+.cat.wounded{border-color:var(--hurt);background:var(--hurt-soft)}
+.fate.wound{color:var(--hurt)}
+.conds{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cond{display:inline-flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--line);background:var(--panel);padding:2px 4px 2px 9px;font-size:13px}
+.cond .k{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cond button{border:0;background:none;padding:0 5px;font-size:15px;line-height:1;color:var(--muted)}
+.cond button:hover{color:var(--death)}
+.addcond{font-size:13px;padding:4px 6px;margin-top:6px;width:auto;max-width:100%}
+.addcond.quiet{background:transparent;border-style:dashed;color:var(--muted);padding:2px 6px}
+.pool{display:flex;flex-direction:column;gap:12px}
+.pool-group{display:flex;flex-direction:column;gap:6px}
+.pool .conds{margin-top:0}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.check input{margin-top:3px}
 .group-title{margin:16px 0 8px}
 .empty{color:var(--muted);text-align:center;padding:36px 12px;border:1px dashed var(--line);border-radius:var(--radius)}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px}
@@ -163,7 +180,7 @@ code{font-size:13px;background:var(--bg);border:1px solid var(--line);border-rad
 
       <section class="panel stack" aria-labelledby="h-count">
         <h2 id="h-count">3. How many are struck</h2>
-        <div class="seg" role="group" aria-label="Count mode">
+        <div class="seg" role="group" aria-label="Count mode" id="countSeg">
           <button type="button" data-mode="exact" aria-pressed="true">Exact</button>
           <button type="button" data-mode="percent" aria-pressed="false">Percent</button>
           <button type="button" data-mode="range" aria-pressed="false">Random range</button>
@@ -184,6 +201,26 @@ code{font-size:13px;background:var(--bg);border:1px solid var(--line);border-rad
         </select>
         <div class="row" id="leadSetRow" hidden><input id="leadSet" type="number" min="1" value="2" aria-label="Lives lost"> <span>lives</span></div>
         <p class="hint" id="leadHint"></p>
+      </section>
+
+      <section class="panel stack" aria-labelledby="h-hurt">
+        <h2 id="h-hurt">5. Survivors</h2>
+        <label class="check" for="hurtOn"><input id="hurtOn" type="checkbox" checked> <span>Some cats survive with injuries, illnesses or permanent conditions</span></label>
+        <div class="stack" id="hurtBox">
+          <div class="seg" role="group" aria-label="How many survivors are hurt" id="hurtSeg">
+            <button type="button" data-mode="exact" aria-pressed="true">Exact</button>
+            <button type="button" data-mode="percent" aria-pressed="false">Percent</button>
+            <button type="button" data-mode="range" aria-pressed="false">Random range</button>
+          </div>
+          <div class="row" id="hModeExact"><input id="hExact" type="number" min="0" value="4" aria-label="Number of hurt survivors"> <span>survivors</span></div>
+          <div class="row" id="hModePercent" hidden><input id="hPercent" type="number" min="0" max="100" value="30" aria-label="Percent of survivors"> <span>% of survivors</span></div>
+          <div class="row" id="hModeRange" hidden><input id="hMin" type="number" min="0" value="2" aria-label="At least"> <span>to</span> <input id="hMax" type="number" min="0" value="6" aria-label="At most"> <span>survivors</span></div>
+          <div class="field"><label class="label" for="perCat">Conditions each</label>
+            <select id="perCat"><option value="1">1</option><option value="2" selected>1 or 2</option><option value="3">1 to 3</option></select></div>
+          <div class="pool" id="pool"></div>
+          <label class="check" for="lethal"><input id="lethal" type="checkbox" checked> <span>Injuries and illnesses can still kill them later, as they normally would in the game</span></label>
+          <p class="hint" id="hurtHint"></p>
+        </div>
       </section>
 
       <button class="primary big" id="rollBtn" type="button">Roll the disaster</button>
@@ -274,6 +311,9 @@ var PRESETS=[
     "m_c died of wounds from the battle with the rogues."]}
 ];
 
+/* ClanGen's own condition data (illnesses, injuries, permanent conditions) for save version 5 */
+var CONDS={"injury":{"claw-wound":{"s":"major","d":3,"m":{"newborn":5,"kitten":5,"adolescent":40,"young adult":50,"adult":50,"senior adult":50,"senior":10},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":[]},"bite-wound":{"s":"major","d":3,"m":{"newborn":10,"kitten":10,"adolescent":45,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":[]},"cat bite":{"s":"major","d":2,"m":{"newborn":10,"kitten":10,"adolescent":45,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":[]},"beak bite":{"s":"major","d":2,"m":{"newborn":10,"kitten":10,"adolescent":45,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":[]},"snake bite":{"s":"major","d":2,"m":{"newborn":10,"kitten":10,"adolescent":45,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":[]},"rat bite":{"s":"major","d":2,"m":{"newborn":10,"kitten":10,"adolescent":45,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[{"name":"whitecough","lower_by":3}],"r":[{"name":"an infected wound","chance":5},{"name":"a festering wound","chance":5}],"cp":[]},"tick bites":{"s":"minor","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":30},{"name":"tick fever","chance":50}],"cp":[]},"blood loss":{"s":"minor","d":1,"m":{"newborn":5,"kitten":5,"adolescent":10,"young adult":20,"adult":25,"senior adult":25,"senior":15},"ii":[],"r":[],"cp":[]},"broken jaw":{"s":"severe","d":4,"m":{"newborn":10,"kitten":10,"adolescent":35,"young adult":50,"adult":50,"senior adult":50,"senior":10},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":["crooked jaw","damaged throat"]},"broken bone":{"s":"severe","d":5,"m":{"newborn":10,"kitten":10,"adolescent":45,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":["weak leg","twisted leg"]},"mangled leg":{"s":"severe","d":3,"m":{"newborn":15,"kitten":15,"adolescent":50,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":["lost a leg","weak leg","twisted leg"]},"dislocated joint":{"s":"major","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":["constant joint pain"]},"joint pain":{"s":"minor","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"sprain":{"s":"major","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"mangled tail":{"s":"severe","d":3,"m":{"newborn":15,"kitten":15,"adolescent":50,"young adult":60,"adult":60,"senior adult":60,"senior":15},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":["lost their tail"]},"bruises":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"cracked pads":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":20}],"cp":[]},"sore":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"phantom pain":{"s":"major","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"scrapes":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":30}],"cp":[]},"small cut":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":40}],"cp":[]},"torn pelt":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":25}],"cp":[]},"torn ear":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":25}],"cp":["partial hearing loss"]},"frostbite":{"s":"major","d":2,"m":{"newborn":10,"kitten":10,"adolescent":20,"young adult":25,"adult":30,"senior adult":20,"senior":10},"ii":[{"name":"running nose","lower_by":6}],"r":[{"name":"running nose","chance":4}],"cp":["lost a leg","lost their tail"]},"water in their lungs":{"s":"major","d":3,"m":{"newborn":10,"kitten":15,"adolescent":50,"young adult":60,"adult":60,"senior adult":60,"senior":30},"ii":[{"name":"running nose","lower_by":5},{"name":"whitecough","lower_by":3}],"r":[{"name":"running nose","chance":10},{"name":"whitecough","chance":20}],"cp":["raspy lungs"]},"burn":{"s":"major","d":2,"m":{"newborn":10,"kitten":10,"adolescent":30,"young adult":50,"adult":60,"senior adult":50,"senior":30},"ii":[],"r":[{"name":"an infected wound","chance":25}],"cp":[]},"severe burn":{"s":"severe","d":4,"m":{"newborn":5,"kitten":5,"adolescent":10,"young adult":30,"adult":30,"senior adult":30,"senior":10},"ii":[],"r":[{"name":"an infected wound","chance":15}],"cp":["lost their tail","lost a leg"]},"shock":{"s":"major","d":1,"m":{"newborn":10,"kitten":8,"adolescent":15,"young adult":30,"adult":30,"senior adult":30,"senior":15},"ii":[],"r":[{"name":"lingering shock","chance":15}],"cp":[]},"lingering shock":{"s":"major","d":12,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":["recurring shock","absent","selective mutism"]},"shivering":{"s":"minor","d":2,"m":{"newborn":10,"kitten":10,"adolescent":30,"young adult":50,"adult":80,"senior adult":50,"senior":20},"ii":[{"name":"running nose","lower_by":5},{"name":"whitecough","lower_by":3}],"r":[{"name":"frostbite","chance":5}],"cp":[]},"dehydrated":{"s":"major","d":1,"m":{"newborn":10,"kitten":10,"adolescent":30,"young adult":50,"adult":80,"senior adult":50,"senior":20},"ii":[],"r":[{"name":"heat exhaustion","chance":10},{"name":"sore throat","chance":10}],"cp":[]},"head damage":{"s":"major","d":5,"m":{"newborn":20,"kitten":15,"adolescent":30,"young adult":40,"adult":50,"senior adult":40,"senior":20},"ii":[],"r":[{"name":"headache","chance":20},{"name":"severe headache","chance":20}],"cp":["failing eyesight","one bad eye","blind","constantly dizzy","partial hearing loss","persistent headaches","absent"]},"damaged eyes":{"s":"major","d":6,"m":{"newborn":30,"kitten":30,"adolescent":50,"young adult":70,"adult":70,"senior adult":70,"senior":50},"ii":[],"r":[{"name":"an infected wound","chance":4}],"cp":["blind","one bad eye","failing eyesight"]},"quilled by a porcupine":{"s":"minor","d":2,"m":{"newborn":10,"kitten":20,"adolescent":40,"young adult":50,"adult":60,"senior adult":50,"senior":30},"ii":[],"r":[{"name":"an infected wound","chance":5}],"cp":[]},"broken back":{"s":"severe","d":8,"m":{"newborn":3,"kitten":5,"adolescent":25,"young adult":30,"adult":30,"senior adult":25,"senior":10},"ii":[],"r":[{"name":"an infected wound","chance":10}],"cp":["paralyzed"]},"poisoned":{"s":"major","d":2,"m":{"newborn":10,"kitten":5,"adolescent":15,"young adult":20,"adult":30,"senior adult":20,"senior":15},"ii":[],"r":[{"name":"redcough","chance":10}],"cp":[]},"bee sting":{"s":"minor","d":2,"m":{"newborn":10,"kitten":20,"adolescent":30,"young adult":50,"adult":50,"senior adult":50,"senior":30},"ii":[],"r":[],"cp":[]},"headache":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"severe headache":{"s":"major","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":[]},"sore throat":{"s":"minor","d":1,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[],"cp":["damaged throat"]},"venom sickness":{"s":"major","d":3,"m":{"newborn":5,"kitten":5,"adolescent":15,"young adult":20,"adult":20,"senior adult":15,"senior":10},"ii":[],"r":[{"name":"an infected wound","chance":15},{"name":"seizure","chance":40}],"cp":["failing eyesight","constantly dizzy"]}},"illness":{"seizure":{"s":"severe","d":1,"m":{"newborn":2,"kitten":5,"adolescent":10,"young adult":20,"adult":20,"senior adult":20,"senior":5},"inf":0,"r":[{"name":"severe headache","chance":50}]},"breathless fit":{"s":"severe","d":1,"m":{"newborn":2,"kitten":5,"adolescent":10,"young adult":20,"adult":20,"senior adult":20,"senior":5},"inf":0,"r":[]},"diarrhea":{"s":"major","d":2,"m":{"newborn":3,"kitten":3,"adolescent":8,"young adult":10,"adult":15,"senior adult":10,"senior":5},"inf":0,"r":[{"name":"dehydrated","chance":30}]},"fleas":{"s":"minor","d":4,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":10,"r":[{"name":"torn pelt","chance":20}]},"greencough":{"s":"severe","d":3,"m":{"newborn":3,"kitten":3,"adolescent":8,"young adult":8,"adult":10,"senior adult":8,"senior":3},"inf":3,"r":[{"name":"yellowcough","chance":60},{"name":"sore throat","chance":20}]},"kittencough":{"s":"severe","d":3,"m":{"newborn":2,"kitten":2,"adolescent":15,"young adult":0,"adult":0,"senior adult":0,"senior":5},"inf":2,"r":[{"name":"whitecough","chance":10},{"name":"sore throat","chance":20}]},"an infected wound":{"s":"major","d":3,"m":{"newborn":3,"kitten":3,"adolescent":8,"young adult":8,"adult":10,"senior adult":8,"senior":5},"inf":0,"r":[{"name":"a festering wound","chance":10}]},"carrionplace disease":{"s":"severe","d":3,"m":{"newborn":1,"kitten":1,"adolescent":2,"young adult":2,"adult":2,"senior adult":2,"senior":1},"inf":0,"r":[]},"redcough":{"s":"severe","d":50,"m":{"newborn":1,"kitten":1,"adolescent":2,"young adult":2,"adult":2,"senior adult":2,"senior":1},"inf":0,"r":[]},"running nose":{"s":"minor","d":3,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[{"name":"whitecough","chance":15},{"name":"sore throat","chance":20}]},"whitecough":{"s":"major","d":3,"m":{"newborn":10,"kitten":10,"adolescent":20,"young adult":60,"adult":60,"senior adult":50,"senior":10},"inf":10,"r":[{"name":"greencough","chance":18},{"name":"sore throat","chance":20}]},"yellowcough":{"s":"major","d":3,"m":{"newborn":2,"kitten":2,"adolescent":3,"young adult":5,"adult":5,"senior adult":5,"senior":3},"inf":6,"r":[{"name":"redcough","chance":80},{"name":"sore throat","chance":20}]},"a festering wound":{"s":"severe","d":3,"m":{"newborn":1,"kitten":1,"adolescent":3,"young adult":3,"adult":5,"senior adult":5,"senior":2},"inf":0,"r":[{"name":"strange lump","chance":80}]},"heat stroke":{"s":"severe","d":1,"m":{"newborn":2,"kitten":2,"adolescent":5,"young adult":5,"adult":8,"senior adult":8,"senior":3},"inf":0,"r":[]},"heat exhaustion":{"s":"major","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[{"name":"heat stroke","chance":5}]},"stomachache":{"s":"minor","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[{"name":"diarrhea","chance":8}]},"constant nightmares":{"s":"major","d":2,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[]},"grief stricken":{"s":"major","d":5,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[{"name":"lasting grief","chance":100},{"name":"constant nightmares","chance":15},{"name":"selective mutism","chance":150}]},"malnourished":{"s":"minor","d":100,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[]},"starving":{"s":"severe","d":100,"m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"inf":0,"r":[]},"tick fever":{"s":"major","d":5,"m":{"newborn":5,"kitten":10,"adolescent":15,"young adult":25,"adult":20,"senior adult":15,"senior":10},"inf":0,"r":[]}},"permanent":{"crooked jaw":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[]},"lost a leg":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":70},{"name":"phantom pain","chance":20},{"name":"sore","chance":20}]},"weak leg":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"sore","chance":20},{"name":"joint pain","chance":40}]},"twisted leg":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"sore","chance":20},{"name":"joint pain","chance":40}]},"lost their tail":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":70},{"name":"phantom pain","chance":10}]},"paralyzed":{"s":"severe","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"an infected wound","chance":60},{"name":"torn pelt","chance":30},{"name":"sore","chance":20},{"name":"joint pain","chance":20}]},"raspy lungs":{"s":"minor","m":{"newborn":20,"kitten":20,"adolescent":60,"young adult":80,"adult":90,"senior adult":60,"senior":30},"ii":[],"r":[{"name":"whitecough","chance":20},{"name":"breathless fit","chance":10}]},"wasting disease":{"s":"major","m":{"newborn":10,"kitten":10,"adolescent":40,"young adult":75,"adult":65,"senior adult":40,"senior":10},"ii":[{"name":"running nose","chance":4},{"name":"whitecough","chance":3},{"name":"greencough","chance":5},{"name":"yellowcough","chance":4}],"r":[{"name":"running nose","chance":10},{"name":"yellowcough","chance":50},{"name":"redcough","chance":60}]},"strange lump":{"s":"major","m":{"newborn":0,"kitten":10,"adolescent":15,"young adult":35,"adult":55,"senior adult":65,"senior":75},"ii":[{"name":"whitecough","chance":10},{"name":"greencough","chance":15},{"name":"yellowcough","chance":13}],"r":[{"name":"seizure","chance":30},{"name":"paralyzed","chance":60},{"name":"redcough","chance":50}]},"blind":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[]},"one bad eye":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"failing eyesight","chance":80}]},"failing eyesight":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"blind","chance":50}]},"partial hearing loss":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"deaf","chance":80}]},"deaf":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[]},"constant joint pain":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"joint pain","chance":10}]},"seizure prone":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"seizure","chance":10}]},"allergies":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"running nose","chance":20}]},"constantly dizzy":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"headache","chance":20}]},"recurring shock":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"constant nightmares","chance":20},{"name":"selective mutism","chance":250}]},"lasting grief":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"grief stricken","chance":50},{"name":"absent","chance":50}]},"persistent headaches":{"s":"major","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"severe headache","chance":20},{"name":"headache","chance":20}]},"selective mutism":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[]},"damaged throat":{"s":"minor","m":{"newborn":0,"kitten":0,"adolescent":0,"young adult":0,"adult":0,"senior adult":0,"senior":0},"ii":[],"r":[{"name":"sore throat","chance":30}]}}};
+var SUGGEST={"flood":{"injury":["water in their lungs","broken bone","bruises","shivering","shock"],"illness":["greencough","whitecough","running nose","grief stricken"],"permanent":["raspy lungs","weak leg","lasting grief"]},"fire":{"injury":["burn","severe burn","damaged eyes","shock","sore throat"],"illness":["breathless fit","whitecough","grief stricken"],"permanent":["raspy lungs","one bad eye","blind","damaged throat","recurring shock"]},"sickness":{"injury":["dehydrated","sore throat"],"illness":["greencough","whitecough","yellowcough","redcough","carrionplace disease","kittencough","diarrhea"],"permanent":["raspy lungs","wasting disease","failing eyesight","partial hearing loss"]},"famine":{"injury":["dehydrated","shivering"],"illness":["malnourished","starving","stomachache","diarrhea","greencough"],"permanent":["wasting disease","constant joint pain","weak leg"]},"storm":{"injury":["broken bone","head damage","sprain","bruises","shock"],"illness":["whitecough","constant nightmares"],"permanent":["persistent headaches","constantly dizzy","weak leg","partial hearing loss"]},"blizzard":{"injury":["frostbite","shivering","cracked pads","broken bone"],"illness":["greencough","whitecough","running nose"],"permanent":["lost their tail","lost a leg","raspy lungs","constant joint pain"]},"rockslide":{"injury":["broken bone","mangled leg","broken back","head damage","bruises"],"illness":["constant nightmares"],"permanent":["lost a leg","paralyzed","twisted leg","persistent headaches","constantly dizzy"]},"twolegs":{"injury":["broken bone","mangled leg","mangled tail","head damage","shock","poisoned"],"illness":["constant nightmares","grief stricken"],"permanent":["lost a leg","lost their tail","deaf","recurring shock","seizure prone"]},"badgers":{"injury":["claw-wound","bite-wound","mangled leg","torn ear","blood loss"],"illness":["an infected wound","a festering wound","constant nightmares"],"permanent":["lost a leg","one bad eye","crooked jaw","twisted leg"]},"rogues":{"injury":["cat bite","claw-wound","torn ear","torn pelt","blood loss"],"illness":["an infected wound","grief stricken"],"permanent":["one bad eye","crooked jaw","partial hearing loss","lasting grief"]}};
 /* ---------- example Clan so the page shows something before a save is loaded ---------- */
 function exCat(id,pre,suf,rank,moons,sa,dfa){return {ID:String(id),name_prefix:pre,name_suffix:suf,specsuffix_hidden:false,moons:moons,starclan_affinity:sa||0,dark_forest_affinity:dfa||0,status:{group_history:[{group:"1",rank:rank,moons_as:3}],standing_history:[{group:"1",standing:["member"],near:true}]},mentor:null,former_mentor:[],current_apprentice:[],former_apprentices:[]};}
 var EXAMPLE={example:true,saveId:"Example",clan:{displayname:"Example",clanage:40,leader:"1",leader_lives:7,instructor:"99"},
@@ -288,6 +328,16 @@ function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 S.custom=lsGet("cc_custom",[]).map(function(e){if(!e.texts)e.texts=[e.text];return e;});
 S.editing=null;
+S.hurtMode="exact";
+S.condSel=lsGet("cc_conds",{});
+var GENERIC={injury:["bruises","shock"],illness:["grief stricken"],permanent:["lasting grief"]};
+var KINDS=["injury","illness","permanent"];
+var KIND_LABEL={injury:"Injuries",illness:"Illnesses",permanent:"Permanent conditions"};
+var KIND_ONE={injury:"injury",illness:"illness",permanent:"permanent"};
+var FILE_KEY={injury:"injuries",illness:"illnesses",permanent:"permanent conditions"};
+function condSel(evId){if(!S.condSel[evId]){var g=SUGGEST[evId]||GENERIC;S.condSel[evId]={injury:g.injury.slice(),illness:g.illness.slice(),permanent:g.permanent.slice()};}return S.condSel[evId];}
+function ageKey(m){return m<=0?"newborn":m<=5?"kitten":m<=11?"adolescent":m<=47?"young adult":m<=95?"adult":m<=119?"senior adult":"senior";}
+function cap(t){return t.charAt(0).toUpperCase()+t.slice(1);}
 
 /* ---------- cat helpers ---------- */
 function cur(c){var h=c.status.group_history;return h[h.length-1];}
@@ -357,9 +407,14 @@ function chooseClan(c){
   S.sel=c;S.roll=null;
   setMsg("Loading "+c.name+"…");
   S.files[c.dir+"clan_cats.json"].text().then(function(t){
-    S.data={example:false,saveId:c.folder,dir:c.dir,clan:c.clan,cats:JSON.parse(t)};
+    S.data={example:false,saveId:c.folder,dir:c.dir,clan:c.clan,cats:JSON.parse(t),conds:{}};
     S.protect=lsGet("cc_protect_"+c.folder,{});
-    setMsg("");renderAll();
+    var pre=c.dir+"conditions/";
+    return Promise.all(Object.keys(S.files).map(function(p){
+      if(p.indexOf(pre)!==0||!/_conditions\.json$/.test(p))return null;
+      var id=p.slice(pre.length).replace(/_conditions\.json$/,"");
+      return S.files[p].text().then(function(x){try{S.data.conds[id]=JSON.parse(x);}catch(e){}});
+    })).then(function(){setMsg("");renderAll();});
   }).catch(function(e){setMsg("The cat list for "+c.name+" could not be read: "+e.message,true);});
 }
 
@@ -416,8 +471,8 @@ function renderRoster(){
   if(!cats.length){box.appendChild(el("div",{class:"empty",text:"This Clan has no living cats."}));return;}
   var ul=el("ul",{class:"cats"});
   cats.forEach(function(c){
-    var f=fateFor(c.ID),p=!!S.protect[c.ID];
-    var cls="cat"+(p?" prot":"")+(f?(f.dies?" dies":" hurt"):"");
+    var f=fateFor(c.ID),p=!!S.protect[c.ID],w=hurtFor(c.ID);
+    var cls="cat"+(p?" prot":"")+(f?(f.dies?" dies":" hurt"):"")+(w?" wounded":"");
     var meta=RANK_LABEL[rankOf(c)]||rankOf(c);meta+=" · "+c.moons+" moons";
     var who=el("div",{class:"who"},[el("div",{class:"name",text:displayName(c)}),el("div",{class:"meta",text:meta})]);
     if(f){
@@ -440,9 +495,27 @@ function renderRoster(){
           curEvent().texts.length>1?el("button",{type:"button",class:"link",onclick:function(){var ev=curEvent(),n=f.text,tries=0;while(n===f.text&&tries++<10)n=pickText(ev);f.text=n;f.edited=false;renderRoster();}},["Another line"]):null]));
       }
     }
+    if(w){
+      who.appendChild(el("div",{class:"fate wound",text:"Survives, but hurt"}));
+      var cl=el("div",{class:"conds"});
+      w.conds.forEach(function(x){cl.appendChild(el("span",{class:"cond"},[el("span",{class:"k",text:KIND_ONE[x.kind]}),cap(x.name),el("button",{type:"button","aria-label":"Remove "+x.name+" from "+displayName(c),title:"Remove",onclick:function(){w.conds=w.conds.filter(function(y){return y!==x;});if(!w.conds.length)S.roll.hurt=S.roll.hurt.filter(function(h){return h!==w;});renderAll();}},["×"])]));});
+      who.appendChild(cl);
+      var add=el("select",{class:"addcond","aria-label":"Add a condition to "+displayName(c)});
+      add.appendChild(el("option",{value:"",text:"Add a condition…"}));
+      KINDS.forEach(function(k){var og=el("optgroup",{label:KIND_LABEL[k]});Object.keys(CONDS[k]).sort().forEach(function(n){if(allowedCond(c,n,w.conds))og.appendChild(el("option",{value:k+"|"+n,text:cap(n)}));});add.appendChild(og);});
+      add.addEventListener("change",function(){if(!add.value)return;var v=add.value.split("|");w.conds.push({kind:v[0],name:v[1]});renderRoster();});
+      who.appendChild(add);
+      who.appendChild(el("div",{class:"row tools"},[el("button",{type:"button",class:"link",onclick:function(){var n=pickConds(c);if(n.length)w.conds=n;renderRoster();}},["Other conditions"])]));
+    }else if(S.roll&&!f&&!p){
+      var add2=el("select",{class:"addcond quiet","aria-label":"Hurt "+displayName(c)});
+      add2.appendChild(el("option",{value:"",text:"Hurt this cat…"}));
+      KINDS.forEach(function(k){var og=el("optgroup",{label:KIND_LABEL[k]});Object.keys(CONDS[k]).sort().forEach(function(n){if(allowedCond(c,n,[]))og.appendChild(el("option",{value:k+"|"+n,text:cap(n)}));});add2.appendChild(og);});
+      add2.addEventListener("change",function(){if(!add2.value)return;var v=add2.value.split("|");S.roll.hurt=S.roll.hurt||[];S.roll.hurt.push({id:c.ID,conds:[{kind:v[0],name:v[1]}]});renderAll();});
+      who.appendChild(add2);
+    }
     var sh=el("button",{type:"button",class:"shield","aria-pressed":String(p),"aria-label":(p?"Remove shield from ":"Shield ")+displayName(c),title:p?"Shielded: can't be struck":"Shield this cat",html:SHIELD,onclick:function(){if(S.protect[c.ID])delete S.protect[c.ID];else S.protect[c.ID]=true;if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll&&S.protect[c.ID])spare(c.ID);renderAll();}});
     var li=el("li",{class:cls},[sh,who]);
-    if(f)li.appendChild(el("button",{type:"button",class:"spare",onclick:function(){spare(c.ID);renderAll();}},["Spare"]));
+    if(f||w)li.appendChild(el("button",{type:"button",class:"spare",onclick:function(){spare(c.ID);renderAll();}},["Spare"]));
     ul.appendChild(li);
   });
   box.appendChild(ul);
@@ -459,6 +532,8 @@ function renderResult(){
   var t=el("div",{class:"tally"});
   t.appendChild(el("span",{text:"StarClan: "+star}));t.appendChild(el("span",{text:"Dark Forest: "+dark}));
   if(hurt.length)t.appendChild(el("span",{text:"Leader survives, losing "+hurt[0].livesLost+" "+(hurt[0].livesLost===1?"life":"lives")}));
+  var wn=(r.hurt||[]).length;
+  if(wn)t.appendChild(el("span",{text:"Hurt survivors: "+wn}));
   card.appendChild(t);
   var warn=[];var ids=dead.map(function(h){return h.id;});
   var dep=S.data.clan.deputy;
@@ -466,6 +541,7 @@ function renderResult(){
   if(warn.length)card.appendChild(el("p",{class:"banner",text:warn.join(" ")}));
   var row=el("div",{class:"row"});
   row.appendChild(el("button",{type:"button",class:"primary",onclick:roll},["Roll again"]));
+  if($("hurtOn").checked)row.appendChild(el("button",{type:"button",onclick:function(){rollHurt();renderAll();}},["Reroll survivors only"]));
   var dl=el("button",{type:"button",id:"dlBtn",onclick:download},[S.data.example?"Load your save to download":"Download new "+S.sel.name]);
   if(S.data.example)dl.disabled=true;
   row.appendChild(dl);
@@ -474,7 +550,68 @@ function renderResult(){
   card.appendChild(el("div",{id:"dlMsg"}));
   box.appendChild(card);
 }
-function renderAll(){renderClans();renderEvents();renderCount();renderLeader();renderSummary();renderResult();renderRoster();}
+function renderPool(){
+  var box=$("pool");box.innerHTML="";var sel=condSel(S.eventId);
+  KINDS.forEach(function(k){
+    var g=el("div",{class:"pool-group"},[el("span",{class:"label",text:KIND_LABEL[k]})]);
+    var chips=el("div",{class:"conds"});
+    sel[k].forEach(function(n){chips.appendChild(el("span",{class:"cond"},[cap(n),el("button",{type:"button","aria-label":"Remove "+n,title:"Remove",onclick:function(){sel[k]=sel[k].filter(function(x){return x!==n;});lsSet("cc_conds",S.condSel);renderPool();}},["×"])]));});
+    if(!sel[k].length)chips.appendChild(el("span",{class:"hint",text:"None"}));
+    g.appendChild(chips);
+    var add=el("select",{class:"addcond","aria-label":"Add "+KIND_ONE[k]});
+    add.appendChild(el("option",{value:"",text:"Add "+(k==="permanent"?"a permanent condition":k==="injury"?"an injury":"an illness")+"…"}));
+    Object.keys(CONDS[k]).sort().forEach(function(n){if(sel[k].indexOf(n)<0)add.appendChild(el("option",{value:n,text:cap(n)}));});
+    add.addEventListener("change",function(){if(add.value){sel[k].push(add.value);lsSet("cc_conds",S.condSel);renderPool();}});
+    g.appendChild(add);box.appendChild(g);
+  });
+  box.appendChild(el("button",{type:"button",class:"link",style:"align-self:flex-start",onclick:function(){delete S.condSel[S.eventId];lsSet("cc_conds",S.condSel);renderPool();}},["Reset to this disaster's suggestions"]));
+}
+function hurtRange(n){
+  if(S.hurtMode==="exact"){var v=Math.max(0,+$("hExact").value||0);return [v,v];}
+  if(S.hurtMode==="percent"){var p=Math.min(100,Math.max(0,+$("hPercent").value||0));var v2=Math.round(n*p/100);return [v2,v2];}
+  var a=Math.max(0,+$("hMin").value||0),b=Math.max(0,+$("hMax").value||0);return [Math.min(a,b),Math.max(a,b)];
+}
+function renderHurt(){
+  var on=$("hurtOn").checked;$("hurtBox").hidden=!on;
+  if(!on)return;
+  var r=hurtRange(living().filter(function(c){return !S.protect[c.ID];}).length);
+  $("hurtHint").textContent=(r[0]===r[1]?r[0]:r[0]+" to "+r[1])+" surviving, unshielded cats will be hurt. These are ClanGen's own conditions, so the game handles them normally: they heal, get worse or leave scars over the next moons.";
+}
+function existing(id){return (S.data.conds&&S.data.conds[id])||{};}
+function hasCond(c,name,got){
+  if(got&&got.some(function(x){return x.name===name;}))return true;
+  var e=existing(c.ID);return ["injuries","illnesses","permanent conditions"].some(function(k){return e[k]&&e[k][name];});
+}
+function allowedCond(c,name,got){
+  var sc=c.scars||[];
+  if(hasCond(c,name,got))return false;
+  if(name==="kittencough"&&rankOf(c)!=="kitten")return false;
+  if(name==="failing eyesight"&&hasCond(c,"blind",got))return false;
+  if(name==="blind"&&hasCond(c,"failing eyesight",got))return false;
+  if(name==="partial hearing loss"&&hasCond(c,"deaf",got))return false;
+  if(name==="deaf"&&hasCond(c,"partial hearing loss",got))return false;
+  if(name==="lost a leg"&&(sc.indexOf("NOPAW")>=0||hasCond(c,"born without a leg",got)))return false;
+  if((name==="lost their tail"||name==="mangled tail")&&(sc.indexOf("NOTAIL")>=0||sc.indexOf("HALFTAIL")>=0||hasCond(c,"born without a tail",got)))return false;
+  if(name==="torn ear"&&sc.indexOf("NOEAR")>=0)return false;
+  return true;
+}
+function pickConds(c){
+  var sel=condSel(S.eventId),pool=[];
+  KINDS.forEach(function(k){sel[k].forEach(function(n){if(CONDS[k][n])pool.push({kind:k,name:n});});});
+  var per=+$("perCat").value,n=per===1?1:randInt(1,per),got=[];
+  shuffle(pool).forEach(function(x){if(got.length<n&&allowedCond(c,x.name,got))got.push(x);});
+  return got;
+}
+function rollHurt(){
+  if(!S.roll)return;
+  if(!$("hurtOn").checked){S.roll.hurt=[];return;}
+  var struck=S.roll.hits.map(function(h){return h.id;});
+  var pool=shuffle(living().filter(function(c){return !S.protect[c.ID]&&struck.indexOf(c.ID)<0;}));
+  var r=hurtRange(pool.length+struck.length),k=Math.min(randInt(r[0],r[1]),pool.length);
+  S.roll.hurt=pool.slice(0,k).map(function(c){return {id:c.ID,conds:pickConds(c)};}).filter(function(h){return h.conds.length;});
+}
+function hurtFor(id){if(!S.roll||!S.roll.hurt)return null;return S.roll.hurt.filter(function(h){return h.id===id;})[0]||null;}
+function renderAll(){renderClans();renderEvents();renderCount();renderLeader();renderPool();renderHurt();renderSummary();renderResult();renderRoster();}
 
 /* ---------- the roll ---------- */
 function pickAccept(guide,kind){return AFTERLIFE_KEY[guide]+"_"+kind+"_"+randInt(0,ACCEPT[guide][kind]-1);}
@@ -504,11 +641,12 @@ function roll(){
     var a=afterlifeFor(c);h.afterlife=a.afterlife;h.accept=a.accept;h.guide=a.guide;h.acceptStr=a.acceptStr;
     return h;
   });
-  S.roll={hits:hits};
+  S.roll={hits:hits,hurt:[]};
+  rollHurt();
   renderAll();
   var rb=$("resultBox");if(rb.scrollIntoView&&window.innerWidth<880)rb.scrollIntoView({behavior:"smooth",block:"start"});
 }
-function spare(id){if(S.roll)S.roll.hits=S.roll.hits.filter(function(h){return h.id!==id;});}
+function spare(id){if(S.roll){S.roll.hits=S.roll.hits.filter(function(h){return h.id!==id;});S.roll.hurt=(S.roll.hurt||[]).filter(function(h){return h.id!==id;});}}
 
 /* ---------- applying the roll to the save (mirrors ClanGen's death handling) ---------- */
 function addUnique(arr,v){if(arr.indexOf(v)<0)arr.push(v);}
@@ -544,17 +682,38 @@ function download(){
     c.current_apprentice=[];
     addUnique(clan.just_died=clan.just_died||[],c.ID);
   });
+  // survivors' conditions, written the way ClanGen's get_injured / get_ill / get_permanent_condition do
+  var lethal=$("lethal").checked,condAdds={};
+  (S.roll.hurt||[]).forEach(function(w){
+    var c=byId[w.id];if(!c||!w.conds.length)return;
+    var j=JSON.parse(JSON.stringify(existing(w.id))),age=ageKey(+c.moons||0);
+    w.conds.forEach(function(x){
+      var d=CONDS[x.kind][x.name],key=FILE_KEY[x.kind];j[key]=j[key]||{};
+      if(j[key][x.name])return;
+      var mort=lethal?(d.m[age]||0):0;
+      if(x.kind==="injury")j[key][x.name]={severity:d.s,mortality:mort,duration:d.d,moon_start:moon,illness_infectiousness:d.ii,risks:d.r,complication:null,cause_permanent:d.cp,event_triggered:true,potential_scars:[]};
+      else if(x.kind==="illness"){var dur=d.d+(d.s!=="minor"?randInt(-1,0):0);j[key][x.name]={severity:d.s,mortality:mort,infectiousness:d.inf,duration:Math.max(1,dur),moon_start:moon,risks:d.r,event_triggered:true};}
+      else{j[key][x.name]={severity:d.s,born_with:false,moons_until:0,moon_start:moon,mortality:d.m[age]||0,illness_infectiousness:d.ii,risks:d.r,complication:null,event_triggered:true};
+        c.scars=c.scars||[];
+        if(x.name==="lost a leg"&&c.scars.indexOf("NOPAW")<0)c.scars.push("NOPAW");
+        if(x.name==="lost their tail"&&c.scars.indexOf("NOTAIL")<0)c.scars.push("NOTAIL");
+        if(x.name==="paralyzed")c.paralyzed=true;}
+    });
+    condAdds[w.id]=j;
+  });
   var out=new JSZip(),folder=D.saveId+"/";
   var tasks=Object.keys(files).filter(function(p){return p.indexOf(dir)===0;}).map(function(p){
     var rel=p.slice(dir.length),m;
     if(rel==="clan_cats.json"||rel==="clan.json")return null;
     if((m=/^history\/(.+)_history\.json$/.exec(rel))&&historyAdds[m[1]])return null;
+    if((m=/^conditions\/(.+)_conditions\.json$/.exec(rel))&&condAdds[m[1]])return null;
     if(rel==="pregnancy.json")return files[p].text().then(function(t){var j=JSON.parse(t||"{}");deadIds.forEach(function(id){delete j[id];});out.file(folder+rel,JSON.stringify(j,null,4));});
-    if(rel==="events.json")return files[p].text().then(function(t){var j=[];try{j=JSON.parse(t);}catch(e){}j.unshift(summaryEvent(ev,deadIds,byId));out.file(folder+rel,JSON.stringify(j,null,4));});
+    if(rel==="events.json")return files[p].text().then(function(t){var j=[];try{j=JSON.parse(t);}catch(e){}j.unshift(summaryEvent(ev,deadIds,byId));var he=healthEvent(ev);if(he)j.splice(1,0,he);out.file(folder+rel,JSON.stringify(j,null,4));});
     if((m=/^conditions\/(.+)_conditions\.json$/.exec(rel))&&deadIds.indexOf(m[1])>=0)return files[p].text().then(function(t){var j=JSON.parse(t);delete j.injuries;delete j.illnesses;if(Object.keys(j).length)out.file(folder+rel,JSON.stringify(j,null,4));});
     return files[p].bytes().then(function(b){out.file(folder+rel,b);});
   }).filter(Boolean);
-  if(!files[dir+"events.json"])out.file(folder+"events.json",JSON.stringify([summaryEvent(ev,deadIds,byId)],null,4));
+  if(!files[dir+"events.json"])out.file(folder+"events.json",JSON.stringify([summaryEvent(ev,deadIds,byId)].concat(healthEvent(ev)||[]),null,4));
+  Object.keys(condAdds).forEach(function(id){out.file(folder+"conditions/"+id+"_conditions.json",JSON.stringify(condAdds[id],null,4));});
   Object.keys(historyAdds).forEach(function(id){
     var p=dir+"history/"+id+"_history.json",ha=historyAdds[id];
     tasks.push((files[p]?files[p].text().then(function(t){return JSON.parse(t);}):Promise.resolve(defaultHistory())).then(function(hj){
@@ -585,6 +744,11 @@ function download(){
     });
   }).catch(function(e){say("Something went wrong building the save: "+e.message+". Your original files are unchanged.",true);});
 }
+function healthEvent(ev){
+  var hs=(S.roll.hurt||[]).filter(function(w){return w.conds.length;});if(!hs.length)return null;
+  var parts=hs.map(function(w){return displayName(catById(w.id))+" ("+w.conds.map(function(x){return x.name;}).join(", ")+")";});
+  return {text:"Survivors of the "+ev.name.toLowerCase()+" were left hurt: "+parts.join("; ")+".",types:["health"],cats_involved:hs.map(function(w){return w.id;}),cat_dict:{}};
+}
 function summaryEvent(ev,deadIds,byId){
   var names=deadIds.map(function(id){return displayName(catById(id));});
   var list=names.length>1?names.slice(0,-1).join(", ")+" and "+names[names.length-1]:names[0];
@@ -593,15 +757,22 @@ function summaryEvent(ev,deadIds,byId){
 }
 
 /* ---------- controls ---------- */
-Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(b){b.addEventListener("click",function(){
+Array.prototype.forEach.call(document.querySelectorAll("#countSeg button"),function(b){b.addEventListener("click",function(){
   S.mode=b.getAttribute("data-mode");
-  Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(x){x.setAttribute("aria-pressed",String(x===b));});
+  Array.prototype.forEach.call(document.querySelectorAll("#countSeg button"),function(x){x.setAttribute("aria-pressed",String(x===b));});
   $("modeExact").hidden=S.mode!=="exact";$("modePercent").hidden=S.mode!=="percent";$("modeRange").hidden=S.mode!=="range";renderCount();
 });});
 ["nExact","nPercent","nMin","nMax"].forEach(function(id){$(id).addEventListener("input",renderCount);});
 $("leadMode").addEventListener("change",renderLeader);
+Array.prototype.forEach.call(document.querySelectorAll("#hurtSeg button"),function(b){b.addEventListener("click",function(){
+  S.hurtMode=b.getAttribute("data-mode");
+  Array.prototype.forEach.call(document.querySelectorAll("#hurtSeg button"),function(x){x.setAttribute("aria-pressed",String(x===b));});
+  $("hModeExact").hidden=S.hurtMode!=="exact";$("hModePercent").hidden=S.hurtMode!=="percent";$("hModeRange").hidden=S.hurtMode!=="range";renderHurt();
+});});
+["hExact","hPercent","hMin","hMax"].forEach(function(id){$(id).addEventListener("input",renderHurt);});
+$("hurtOn").addEventListener("change",function(){if(S.roll){rollHurt();}renderAll();});
 $("rollBtn").addEventListener("click",roll);
-$("protKits").addEventListener("click",function(){living().forEach(function(c){if(isKit(c))S.protect[c.ID]=true;});if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll)S.roll.hits=S.roll.hits.filter(function(h){return !S.protect[h.id];});renderAll();});
+$("protKits").addEventListener("click",function(){living().forEach(function(c){if(isKit(c))S.protect[c.ID]=true;});if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);if(S.roll){S.roll.hits=S.roll.hits.filter(function(h){return !S.protect[h.id];});S.roll.hurt=(S.roll.hurt||[]).filter(function(h){return !S.protect[h.id];});}renderAll();});
 $("protNone").addEventListener("click",function(){S.protect={};if(!S.data.example)lsSet("cc_protect_"+S.data.saveId,S.protect);renderAll();});
 $("addEvent").addEventListener("click",function(){
   var n=$("newName").value.trim(),h=$("newHeadline").value.trim(),t=$("newText").value.trim(),msg=$("addMsg");
